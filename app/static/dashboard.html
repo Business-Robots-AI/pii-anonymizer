@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PII Anonymizer — Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--glass-bg:rgba(255,255,255,0.55);
+--glass-border:rgba(0,0,0,0.07);
+--glass-blur:blur(16px);
+--accent:#667eea;--accent2:#764ba2;
+--green:#16a34a;--red:#ef4444;--yellow:#d97706;
+--text:#1a1a2e;--text2:rgba(0,0,0,0.5);--text3:rgba(0,0,0,0.3);
+--input-bg:rgba(255,255,255,.6);--input-border:rgba(0,0,0,.08);
+--body-bg:linear-gradient(135deg,#e8eaf6 0%,#f5f5f5 40%,#e3f2fd 100%);
+--orb-opacity:.18;--sidebar-bg:rgba(255,255,255,0.6);
+--hover-bg:rgba(0,0,0,.04);--active-nav:rgba(102,126,234,.12);
+--table-hover:rgba(0,0,0,.02);--table-border:rgba(0,0,0,.04);
+--tab-bg:rgba(0,0,0,.04);--select-bg:#fff;
+--shadow:0 4px 24px rgba(0,0,0,.06);
+--radius:16px;--sidebar-w:240px;
+}
+[data-theme="dark"]{
+--glass-bg:rgba(255,255,255,0.06);
+--glass-border:rgba(255,255,255,0.1);
+--text:#fff;--text2:rgba(255,255,255,0.6);--text3:rgba(255,255,255,0.35);
+--input-bg:rgba(255,255,255,.06);--input-border:rgba(255,255,255,.1);
+--body-bg:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%);
+--orb-opacity:.2;--sidebar-bg:rgba(255,255,255,0.04);
+--hover-bg:rgba(255,255,255,.06);--active-nav:rgba(102,126,234,.18);
+--table-hover:rgba(255,255,255,.03);--table-border:rgba(255,255,255,.04);
+--tab-bg:rgba(255,255,255,.06);--select-bg:#1a1a2e;
+--shadow:0 8px 32px rgba(0,0,0,.2);
+--green:#4ade80;--red:#f87171;--yellow:#fbbf24;
+}
+body{min-height:100vh;background:var(--body-bg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;color:var(--text);display:flex;transition:background .3s,color .3s}
+.orb{position:fixed;border-radius:50%;filter:blur(100px);opacity:var(--orb-opacity);pointer-events:none;animation:float 25s infinite;transition:opacity .3s}
+.orb-1{width:500px;height:500px;background:#667eea;top:-150px;left:-150px}
+.orb-2{width:400px;height:400px;background:#764ba2;bottom:-100px;right:-100px;animation-delay:-10s}
+@keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-30px)}}
+
+/* Top-right controls */
+.top-bar{position:fixed;top:16px;right:16px;z-index:50;display:flex;gap:8px;align-items:center}
+.switcher{display:flex;gap:2px;background:var(--glass-bg);backdrop-filter:blur(12px);border-radius:10px;padding:3px;border:1px solid var(--glass-border);box-shadow:0 2px 8px rgba(0,0,0,.06);transition:background .3s}
+.sw-btn{padding:5px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;border:none;background:transparent;color:var(--text2);transition:.2s}
+.sw-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 8px rgba(102,126,234,.25)}
+.theme-toggle{position:relative;width:52px;height:28px;border-radius:14px;background:var(--tab-bg);border:1px solid var(--glass-border);cursor:pointer;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.theme-toggle .knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:.3s;display:flex;align-items:center;justify-content:center}
+[data-theme="dark"] .theme-toggle .knob{left:26px}
+[data-theme="dark"] .theme-toggle{background:rgba(255,255,255,.15)}
+.theme-toggle svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);height:100vh;position:fixed;left:0;top:0;z-index:10;background:var(--sidebar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid var(--glass-border);display:flex;flex-direction:column;padding:20px 0;transition:background .3s}
+.sidebar-logo{padding:0 20px 24px;border-bottom:1px solid var(--glass-border)}
+.sidebar-logo h2{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.sidebar-logo span{font-size:11px;color:var(--text2)}
+.nav{flex:1;padding:16px 8px;display:flex;flex-direction:column;gap:2px}
+.nav-item{padding:11px 16px;border-radius:10px;cursor:pointer;font-size:14px;color:var(--text2);transition:.2s;display:flex;align-items:center;gap:10px}
+.nav-item:hover{background:var(--hover-bg);color:var(--text)}
+.nav-item.active{background:var(--active-nav);color:var(--accent)}
+.nav-item svg{width:18px;height:18px;opacity:.7}
+.nav-bottom{padding:12px 20px;border-top:1px solid var(--glass-border)}
+.nav-bottom .user-email{font-size:12px;color:var(--text2);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis}
+.logout-btn{font-size:13px;color:var(--red);cursor:pointer;background:none;border:none;padding:0}
+.logout-btn:hover{text-decoration:underline}
+
+/* Sidebar toggle */
+.sidebar-toggle{position:absolute;top:50%;right:-16px;transform:translateY(-50%);width:16px;height:40px;border-radius:0 8px 8px 0;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:20;transition:.2s;box-shadow:2px 0 8px rgba(102,126,234,.3)}
+.sidebar-toggle:hover{background:var(--accent2);box-shadow:2px 0 12px rgba(118,75,162,.4)}
+.sidebar-toggle svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s}
+.sidebar.collapsed .sidebar-toggle svg{transform:rotate(180deg)}
+.sidebar{transition:width .3s,background .3s}
+.sidebar.collapsed{width:68px}
+.sidebar.collapsed .sidebar-logo h2,.sidebar.collapsed .sidebar-logo span,.sidebar.collapsed .nav-item span,.sidebar.collapsed .nav-bottom .user-email,.sidebar.collapsed .nav-bottom .logout-btn{display:none}
+.sidebar.collapsed .nav-item{justify-content:center;padding:11px}
+.sidebar.collapsed .sidebar-logo{padding:0 12px 24px;text-align:center}
+.main{margin-left:var(--sidebar-w);flex:1;padding:28px 32px;min-height:100vh;position:relative;transition:margin-left .3s}
+body.sidebar-collapsed .main{margin-left:68px}
+.page-title{font-size:22px;font-weight:700;margin-bottom:20px;letter-spacing:-.3px}
+
+.glass{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-radius:var(--radius);border:1px solid var(--glass-border);box-shadow:var(--shadow);transition:background .3s,border-color .3s}
+.card{padding:24px}.card-sm{padding:18px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{text-align:center}
+.stat-val{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:12px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+.glass-input,.glass-select{width:100%;padding:12px 14px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:10px;color:var(--text);font-size:14px;outline:none;transition:.3s}
+.glass-input:focus,.glass-select:focus{border-color:var(--accent);box-shadow:0 0 16px rgba(102,126,234,.1)}
+.glass-input::placeholder{color:var(--text3)}
+.glass-select{appearance:none;cursor:pointer}
+.glass-select option{background:var(--select-bg);color:var(--text)}
+textarea.glass-input{resize:vertical;min-height:100px;font-family:inherit}
+
+.btn{padding:10px 20px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;color:#fff}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(102,126,234,.3)}
+.btn-secondary{background:var(--tab-bg);border:1px solid var(--glass-border);color:var(--text)}
+.btn-secondary:hover{background:var(--hover-bg)}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-danger:hover{background:rgba(239,68,68,.2)}
+.btn-sm{padding:7px 14px;font-size:12px}
+
+.glass-table{width:100%;border-collapse:collapse}
+.glass-table th{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:10px 14px;border-bottom:1px solid var(--glass-border)}
+.glass-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--table-border);color:var(--text)}
+.glass-table tr:hover td{background:var(--table-hover)}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-name{background:rgba(102,126,234,.12);color:#667eea}
+.badge-phone{background:rgba(22,163,74,.1);color:var(--green)}
+.badge-pinfl{background:rgba(217,119,6,.1);color:var(--yellow)}
+.badge-passport{background:rgba(239,68,68,.1);color:var(--red)}
+.badge-card{background:rgba(168,85,247,.1);color:#a855f7}
+.badge-email{background:rgba(14,165,233,.1);color:#0ea5e9}
+.badge-inn{background:rgba(251,146,60,.1);color:#ea580c}
+.badge-account{background:rgba(20,184,166,.1);color:#14b8a6}
+.badge-date{background:rgba(234,88,12,.1);color:#ea580c}
+.badge-address{background:rgba(99,102,241,.1);color:#6366f1}
+
+/* Custom words */
+.word-list{display:flex;flex-direction:column;gap:6px}
+.word-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;background:var(--tab-bg);border:1px solid var(--glass-border)}
+.word-item-text{font-size:14px;font-weight:500}
+.word-item-type{font-size:11px;color:var(--text2);margin-left:8px}
+.word-item-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;padding:0 4px;opacity:.6;transition:.2s}
+.word-item-del:hover{opacity:1}
+.add-word-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+
+.refresh-btn{transition:transform .3s,background .2s,box-shadow .2s}.refresh-btn:hover{background:var(--active-nav);box-shadow:0 4px 12px rgba(102,126,234,.2)}.refresh-btn:hover svg{animation:spin .6s ease}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.filter-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.filter-bar .glass-input,.filter-bar .glass-select{width:auto;min-width:140px}
+
+.pagination{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:18px}
+.page-btn{padding:7px 12px;border-radius:8px;background:var(--tab-bg);border:1px solid var(--glass-border);color:var(--text2);cursor:pointer;font-size:13px;transition:.2s}
+.page-btn:hover{background:var(--hover-bg);color:var(--text)}
+.page-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent}
+.page-info{font-size:13px;color:var(--text2)}
+
+.token-box{background:var(--tab-bg);border-radius:10px;padding:14px;font-family:'SF Mono',monospace;font-size:13px;word-break:break-all;margin:12px 0;border:1px solid var(--glass-border);color:var(--text)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{max-width:460px;width:90%;padding:28px}
+.empty{text-align:center;padding:40px;color:var(--text2)}
+
+@media(max-width:768px){.sidebar{display:none}.sidebar-toggle{display:none}.main{margin-left:0!important;padding:16px}.filter-bar{flex-direction:column}.filter-bar .glass-input,.filter-bar .glass-select{width:100%}.add-word-form{flex-direction:column}.add-word-form .form-group{width:100%}}
+
+.view{display:none}.view.active{display:block}
+.flex{display:flex}.gap-2{gap:8px}.gap-3{gap:12px}.items-center{align-items:center}.justify-between{justify-content:space-between}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mb-3{margin-bottom:12px}
+.text-muted{color:var(--text2)}.text-sm{font-size:13px}.text-xs{font-size:11px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="top-bar">
+  <div class="switcher">
+    <button class="sw-btn" onclick="setLang('ru')">RU</button>
+    <button class="sw-btn" onclick="setLang('uz')">UZ</button>
+    <button class="sw-btn" onclick="setLang('en')">EN</button>
+  </div>
+  <div class="theme-toggle" onclick="toggleTheme()"><div class="knob" id="themeIcon"></div></div>
+</div>
+
+<aside class="sidebar" id="sidebar">
+<button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+<div class="sidebar-logo"><h2>PII Anonymizer</h2><span data-i18n="sidebar_sub"></span></div>
+<nav class="nav">
+  <div class="nav-item active" data-view="dashboard" onclick="navigate('dashboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span data-i18n="nav_dashboard"></span></div>
+  <div class="nav-item" data-view="test" onclick="navigate('test')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><span data-i18n="nav_test"></span></div>
+  <div class="nav-item" data-view="data" onclick="navigate('data')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg><span data-i18n="nav_data"></span></div>
+
+  <div class="nav-item" data-view="customwords" onclick="navigate('customwords')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span data-i18n="nav_custom_words"></span></div>
+  <div class="nav-item" data-view="tokens" onclick="navigate('tokens')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span data-i18n="nav_tokens"></span></div>
+  <div class="nav-item" data-view="database" onclick="navigate('database')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span data-i18n="nav_database"></span></div>
+  <div class="nav-item" data-view="settings" onclick="navigate('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span data-i18n="nav_settings"></span></div>
+</nav>
+<div class="nav-bottom"><div class="user-email" id="userEmail">...</div><button class="logout-btn" style="display:none;color:var(--accent);margin-bottom:4px" id="adminLink" onclick="window.location.href='/admin'" data-i18n="admin_panel"></button><button class="logout-btn" onclick="logout()" data-i18n="btn_logout"></button></div>
+</aside>
+
+<main class="main">
+
+<div class="view active" id="view-dashboard">
+<h1 class="page-title" data-i18n="nav_dashboard"></h1>
+<div class="stats-grid">
+  <div class="glass card-sm stat-card"><div class="stat-val" id="statSessions">—</div><div class="stat-label" data-i18n="stat_sessions"></div></div>
+  <div class="glass card-sm stat-card"><div class="stat-val" id="statMappings">—</div><div class="stat-label" data-i18n="stat_pii_items"></div></div>
+  <div class="glass card-sm stat-card"><div class="stat-val" id="statTypes">—</div><div class="stat-label" data-i18n="stat_pii_types"></div></div>
+</div>
+<div class="glass card">
+  <h3 style="font-size:15px;margin-bottom:14px" data-i18n="quick_test"></h3>
+  <textarea class="glass-input" id="quickTestInput" rows="3"></textarea>
+  <div class="flex gap-2 mt-3">
+    <button class="btn btn-primary btn-sm" onclick="quickTest()" data-i18n="btn_anonymize"></button>
+    <button class="btn btn-secondary btn-sm" onclick="loadExample()" data-i18n="btn_example"></button>
+  </div>
+  <div id="quickTestResult" class="mt-3" style="display:none"><div class="glass card-sm mt-3" style="font-family:'SF Mono',monospace;font-size:13px;white-space:pre-wrap" id="quickTestOutput"></div></div>
+</div>
+</div>
+
+<div class="view" id="view-test">
+<h1 class="page-title" data-i18n="nav_test_full"></h1>
+<div class="glass card">
+  <div class="form-group"><label data-i18n="label_input_text"></label><textarea class="glass-input" id="testInput" rows="6"></textarea></div>
+  <div class="flex gap-2">
+    <button class="btn btn-primary" onclick="runTest()" data-i18n="btn_anonymize"></button>
+    <button class="btn btn-secondary" onclick="loadExample()" data-i18n="btn_example"></button>
+    <button class="btn btn-secondary" onclick="document.getElementById('testInput').value='';document.getElementById('testResult').style.display='none'" data-i18n="btn_clear"></button>
+  </div>
+  <div id="testResult" style="display:none" class="mt-4">
+    <label style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px" data-i18n="label_result"></label>
+    <div class="glass card-sm mt-3" style="font-family:'SF Mono',monospace;font-size:13px;white-space:pre-wrap" id="testOutput"></div>
+    <div class="flex gap-2 mt-3 flex-wrap" id="testPiiTags"></div>
+    <div id="testMapping" class="mt-3"></div>
+  </div>
+</div>
+</div>
+
+<div class="view" id="view-data">
+<h1 class="page-title" data-i18n="nav_data"></h1>
+<div class="filter-bar">
+  <select class="glass-select" id="filterType" onchange="loadData()">
+    <option value="" data-i18n-opt="filter_all"></option>
+    <option value="NAME" data-i18n-opt="filter_name"></option>
+    <option value="PHONE" data-i18n-opt="filter_phone"></option>
+    <option value="PINFL" data-i18n-opt="filter_pinfl"></option>
+    <option value="PASSPORT" data-i18n-opt="filter_passport"></option>
+    <option value="CARD" data-i18n-opt="filter_card"></option>
+    <option value="EMAIL" data-i18n-opt="filter_email"></option>
+    <option value="INN" data-i18n-opt="filter_inn"></option>
+    <option value="ACCOUNT" data-i18n-opt="filter_account"></option>
+    <option value="DATE" data-i18n-opt="filter_date"></option>
+    <option value="ADDRESS" data-i18n-opt="filter_address"></option>
+  </select>
+  <input class="glass-input" id="filterSearch" style="min-width:180px" onkeyup="if(event.key==='Enter')loadData()">
+  <button class="btn btn-primary btn-sm" onclick="loadData()" data-i18n="btn_filter"></button>
+  <button class="btn btn-secondary btn-sm" onclick="exportData()" data-i18n="btn_export_csv"></button>
+  <button class="btn btn-secondary btn-sm refresh-btn" onclick="loadData()" title="Обновить" style="width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:50%"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
+</div>
+<div class="glass card" style="overflow-x:auto">
+  <table class="glass-table"><thead><tr><th data-i18n="th_session"></th><th data-i18n="th_type"></th><th data-i18n="th_placeholder"></th><th data-i18n="th_value"></th><th data-i18n="th_date"></th></tr></thead><tbody id="dataBody"><tr><td colspan="5" class="empty" data-i18n="loading"></td></tr></tbody></table>
+  <div class="pagination" id="dataPagination"></div>
+</div>
+</div>
+
+<div class="view" id="view-tokens">
+<h1 class="page-title" data-i18n="nav_tokens"></h1>
+<div class="flex justify-between items-center mb-3"><p class="text-sm text-muted" data-i18n="tokens_desc"></p><button class="btn btn-primary btn-sm" onclick="showCreateToken()">+ <span data-i18n="btn_new_token"></span></button></div>
+<div class="glass card" style="overflow-x:auto"><table class="glass-table"><thead><tr><th data-i18n="th_name"></th><th data-i18n="th_prefix"></th><th data-i18n="th_last_used"></th><th data-i18n="th_created"></th><th></th></tr></thead><tbody id="tokensBody"><tr><td colspan="5" class="empty" data-i18n="loading"></td></tr></tbody></table></div>
+</div>
+
+<div class="view" id="view-database">
+<h1 class="page-title" data-i18n="nav_database_full"></h1>
+<p class="text-sm text-muted mb-3" data-i18n="db_desc"></p>
+<div id="dbPlatformBanner" class="glass card" style="display:none;border-left:3px solid var(--green)">
+  <div class="flex items-center gap-2"><span style="color:var(--green);font-size:16px">&#9679;</span><strong data-i18n="db_platform_badge"></strong></div>
+  <p class="text-sm text-muted" style="margin-top:8px" data-i18n="db_platform_note"></p>
+  <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="showCustomDbForm()" data-i18n="btn_connect_own"></button>
+</div>
+<div class="glass card" id="dbFormCard" style="display:none">
+  <form onsubmit="return saveDbConfig(event)">
+    <div class="form-row"><div class="form-group"><label data-i18n="label_host"></label><input class="glass-input" id="dbHost" placeholder="db.example.com" required></div><div class="form-group"><label data-i18n="label_port"></label><input class="glass-input" id="dbPort" type="number" value="5432" required></div></div>
+    <div class="form-row"><div class="form-group"><label data-i18n="label_database"></label><input class="glass-input" id="dbName" placeholder="pii_anonymizer" required></div><div class="form-group"><label data-i18n="label_user"></label><input class="glass-input" id="dbUser" placeholder="pii_user" required></div></div>
+    <div class="form-group"><label data-i18n="label_password"></label><input class="glass-input" id="dbPassword" type="password" placeholder="••••••••"></div>
+    <div class="flex gap-2"><button class="btn btn-primary" type="submit" data-i18n="btn_save_test"></button><button class="btn btn-secondary" type="button" onclick="testDbConnection()" data-i18n="btn_test_conn"></button><a class="btn btn-secondary" href="/client_schema.sql" download style="text-decoration:none;text-align:center" data-i18n="btn_download_sql"></a></div>
+  </form>
+  <div id="dbStatus" class="mt-3"></div>
+</div>
+</div>
+
+<div class="view" id="view-customwords">
+<h1 class="page-title" data-i18n="nav_custom_words"></h1>
+<p class="text-sm text-muted mb-3" data-i18n="cw_desc"></p>
+<div class="glass card mb-3">
+  <h3 style="font-size:15px;margin-bottom:14px" data-i18n="cw_add_word"></h3>
+  <div class="add-word-form">
+    <div class="form-group" style="flex:1;margin-bottom:0"><label data-i18n="cw_word"></label><input class="glass-input" id="cwWordInput" placeholder=""></div>
+    <div class="form-group" style="min-width:140px;margin-bottom:0"><label data-i18n="cw_type"></label><select class="glass-select" id="cwTypeSelect"><option value="stop_word" data-i18n-opt="cw_stop_word"></option><option value="name" data-i18n-opt="cw_name_type"></option></select></div>
+    <button class="btn btn-primary btn-sm" style="height:42px;margin-top:auto" onclick="addCustomWord()" data-i18n="btn_create"></button>
+  </div>
+</div>
+<div class="glass card">
+  <div class="flex justify-between items-center mb-3">
+    <h3 style="font-size:15px" data-i18n="cw_your_words"></h3>
+  </div>
+  <div class="word-list" id="cwWordList"><div class="empty" data-i18n="loading"></div></div>
+</div>
+</div>
+
+<div class="view" id="view-settings">
+<h1 class="page-title" data-i18n="nav_settings"></h1>
+<div class="glass card mb-3">
+  <h3 style="font-size:15px;margin-bottom:14px" data-i18n="settings_profile"></h3>
+  <div class="form-row"><div class="form-group"><label data-i18n="label_fullname"></label><input class="glass-input" id="settName"></div><div class="form-group"><label data-i18n="label_company"></label><input class="glass-input" id="settCompany"></div></div>
+  <button class="btn btn-primary btn-sm" onclick="updateProfile()" data-i18n="btn_save"></button>
+</div>
+<div class="glass card">
+  <h3 style="font-size:15px;margin-bottom:14px" data-i18n="settings_change_pw"></h3>
+  <div class="form-group"><label data-i18n="label_current_pw"></label><input class="glass-input" id="settCurPw" type="password"></div>
+  <div class="form-group"><label data-i18n="label_new_pw"></label><input class="glass-input" id="settNewPw" type="password" minlength="6"></div>
+  <button class="btn btn-primary btn-sm" onclick="changePassword()" data-i18n="btn_update_pw"></button>
+  <div id="settMsg" class="mt-3 text-sm"></div>
+</div>
+</div>
+
+</main>
+
+<div class="modal-overlay" id="tokenModal">
+<div class="glass modal">
+  <h3 style="margin-bottom:16px" data-i18n="modal_create_token"></h3>
+  <div class="form-group"><label data-i18n="label_token_name"></label><input class="glass-input" id="tokenName" value="Default"></div>
+  <div id="tokenCreated" style="display:none"><p class="text-sm" style="color:var(--yellow);margin-bottom:8px" data-i18n="token_warning"></p><div class="token-box" id="newTokenValue"></div><button class="btn btn-secondary btn-sm" onclick="copyToken()" data-i18n="btn_copy"></button></div>
+  <div class="flex gap-2 mt-3"><button class="btn btn-primary" id="createTokenBtn" onclick="createToken()" data-i18n="btn_create"></button><button class="btn btn-secondary" onclick="closeModal()" data-i18n="btn_close"></button></div>
+</div>
+</div>
+
+<script>
+const i18n={
+  ru:{admin_panel:'Admin Panel',sidebar_sub:'Защита данных',nav_dashboard:'Панель управления',nav_test:'Тест',nav_test_full:'Тест анонимизации',nav_data:'Просмотр данных',nav_custom_words:'Словарь',nav_tokens:'API Токены',nav_database:'База данных',nav_database_full:'База данных клиента',nav_settings:'Настройки',btn_logout:'Выйти',stat_sessions:'Сессии',stat_pii_items:'ПДн элементы',stat_pii_types:'Типы ПДн',stat_uptime:'Аптайм',quick_test:'Быстрый тест',btn_anonymize:'Анонимизировать',btn_example:'Пример',btn_clear:'Очистить',btn_filter:'Фильтр',btn_refresh:'Обновить',btn_export_csv:'Экспорт CSV',label_input_text:'Введите текст',label_result:'Результат',ph_test_input:'Вставьте текст с персональными данными...',ph_quick_test:'Введите текст для анонимизации...',ph_search:'Поиск...',filter_all:'Все типы',filter_name:'Имя',filter_phone:'Телефон',filter_pinfl:'ПИНФЛ',filter_passport:'Паспорт',filter_card:'Карта',filter_email:'Email',filter_inn:'ИНН',filter_account:'Счёт',filter_date:'Дата',filter_address:'Адрес',th_session:'Сессия',th_type:'Тип',th_placeholder:'Заполнитель',th_value:'Значение',th_date:'Дата',th_name:'Название',th_prefix:'Префикс',th_last_used:'Последнее исп.',th_created:'Создан',loading:'Загрузка...',no_data:'Данные не найдены',no_tokens:'Токенов пока нет',tokens_desc:'Управление API-токенами доступа',btn_new_token:'Новый токен',modal_create_token:'Создание API-токена',label_token_name:'Название токена',token_warning:'Скопируйте токен сейчас. Он больше не будет показан!',btn_copy:'Копировать',btn_create:'Создать',btn_close:'Закрыть',btn_delete:'Удалить',confirm_delete_token:'Удалить этот токен?',db_desc:'Ваш аккаунт подключён к базе данных платформы по умолчанию. При желании вы можете подключить свою собственную БД PostgreSQL.',db_platform_badge:'Платформенная БД (по умолчанию)',db_platform_note:'Вы используете общую базу данных платформы. Для изолированного хранения подключите свою БД.',btn_connect_own:'Подключить свою БД',btn_restore_default:'Вернуться к БД по умолчанию',label_host:'Хост',label_port:'Порт',label_database:'База данных',label_user:'Пользователь',label_password:'Пароль',btn_save_test:'Сохранить и проверить',btn_test_conn:'Проверить соединение',btn_download_sql:'Скачать SQL схему',db_saved:'Сохранено! Проверка соединения...',db_connected_verified:'Подключено и все таблицы проверены!',db_connected_missing:'Подключено, но отсутствуют таблицы: ',db_download_sql:'Скачать SQL',db_conn_failed:'Ошибка соединения: ',db_test_failed:'Проверка не прошла',settings_profile:'Профиль',settings_change_pw:'Смена пароля',label_fullname:'Полное имя',label_company:'Компания',label_current_pw:'Текущий пароль',label_new_pw:'Новый пароль',btn_save:'Сохранить',btn_update_pw:'Обновить пароль',saved:'Сохранено',pw_updated:'Пароль обновлён',never:'Никогда',items:'элементов',prev:'Назад',next:'Далее',cw_desc:'Добавьте слова-исключения (стоп-слова) или дополнительные имена для улучшения точности.',cw_add_word:'Добавить слово',cw_word:'Слово',cw_type:'Тип',cw_stop_word:'Стоп-слово',cw_name_type:'Имя',cw_your_words:'Ваши слова',cw_no_words:'Словарь пуст',cw_added:'Слово добавлено',cw_deleted:'Слово удалено'},
+  uz:{admin_panel:'Admin Panel',sidebar_sub:'Ma\'lumotlarni himoya qilish',nav_dashboard:'Boshqaruv paneli',nav_test:'Test',nav_test_full:'Anonimlashtirish testi',nav_data:'Ma\'lumotlarni ko\'rish',nav_custom_words:'Lug\'at',nav_tokens:'API Tokenlar',nav_database:'Ma\'lumotlar bazasi',nav_database_full:'Mijoz ma\'lumotlar bazasi',nav_settings:'Sozlamalar',btn_logout:'Chiqish',stat_sessions:'Sessiyalar',stat_pii_items:'ShM elementlar',stat_pii_types:'ShM turlari',stat_uptime:'Ish vaqti',quick_test:'Tezkor test',btn_anonymize:'Anonimlashtirish',btn_example:'Misol',btn_clear:'Tozalash',btn_filter:'Filtr',btn_refresh:'Yangilash',btn_export_csv:'CSV eksport',label_input_text:'Matnni kiriting',label_result:'Natija',ph_test_input:'Shaxsiy ma\'lumotli matnni joylashtiring...',ph_quick_test:'Anonimlashtirish uchun matn kiriting...',ph_search:'Qidirish...',filter_all:'Barcha turlar',filter_name:'Ism',filter_phone:'Telefon',filter_pinfl:'JShShIR',filter_passport:'Pasport',filter_card:'Karta',filter_email:'Email',filter_inn:'STIR',filter_account:'Hisob',filter_date:'Sana',filter_address:'Manzil',th_session:'Sessiya',th_type:'Turi',th_placeholder:'To\'ldiruvchi',th_value:'Qiymati',th_date:'Sana',th_name:'Nomi',th_prefix:'Prefiks',th_last_used:'Oxirgi foydalanish',th_created:'Yaratilgan',loading:'Yuklanmoqda...',no_data:'Ma\'lumot topilmadi',no_tokens:'Tokenlar hali yo\'q',tokens_desc:'API kirish tokenlarini boshqarish',btn_new_token:'Yangi token',modal_create_token:'API token yaratish',label_token_name:'Token nomi',token_warning:'Tokenni hozir nusxalang. U boshqa ko\'rsatilmaydi!',btn_copy:'Nusxalash',btn_create:'Yaratish',btn_close:'Yopish',btn_delete:'O\'chirish',confirm_delete_token:'Bu tokenni o\'chirasizmi?',db_desc:'Hisobingiz standart platforma bazasiga ulangan. Xohlasangiz o\'zingizning PostgreSQL bazangizni ulashingiz mumkin.',db_platform_badge:'Platforma MB (standart)',db_platform_note:'Siz platformaning umumiy bazasidan foydalanmoqdasiz. Alohida saqlash uchun o\'z bazangizni ulang.',btn_connect_own:'O\'z bazani ulash',btn_restore_default:'Standart bazaga qaytish',label_host:'Host',label_port:'Port',label_database:'Ma\'lumotlar bazasi',label_user:'Foydalanuvchi',label_password:'Parol',btn_save_test:'Saqlash va tekshirish',btn_test_conn:'Ulanishni tekshirish',btn_download_sql:'SQL sxemani yuklab olish',db_saved:'Saqlandi! Ulanish tekshirilmoqda...',db_connected_verified:'Ulangan va barcha jadvallar tekshirildi!',db_connected_missing:'Ulangan, lekin jadvallar yetishmayapti: ',db_download_sql:'SQL yuklab olish',db_conn_failed:'Ulanish xatosi: ',db_test_failed:'Tekshirish amalga oshmadi',settings_profile:'Profil',settings_change_pw:'Parolni o\'zgartirish',label_fullname:'To\'liq ism',label_company:'Kompaniya',label_current_pw:'Joriy parol',label_new_pw:'Yangi parol',btn_save:'Saqlash',btn_update_pw:'Parolni yangilash',saved:'Saqlandi',pw_updated:'Parol yangilandi',never:'Hech qachon',items:'element',prev:'Oldingi',next:'Keyingi',cw_desc:'Aniqlikni oshirish uchun istisno so\'zlar yoki qo\'shimcha ismlar qo\'shing.',cw_add_word:'So\'z qo\'shish',cw_word:'So\'z',cw_type:'Turi',cw_stop_word:'Stop-so\'z',cw_name_type:'Ism',cw_your_words:'Sizning so\'zlaringiz',cw_no_words:'Lug\'at bo\'sh',cw_added:'So\'z qo\'shildi',cw_deleted:'So\'z o\'chirildi'},
+  en:{admin_panel:'Admin Panel',sidebar_sub:'Data Protection',nav_dashboard:'Dashboard',nav_test:'Test',nav_test_full:'Anonymization Test',nav_data:'Data Viewer',nav_custom_words:'Dictionary',nav_tokens:'API Tokens',nav_database:'Database',nav_database_full:'Client Database',nav_settings:'Settings',btn_logout:'Sign Out',stat_sessions:'Sessions',stat_pii_items:'PII Items',stat_pii_types:'PII Types',stat_uptime:'Uptime',quick_test:'Quick Test',btn_anonymize:'Anonymize',btn_example:'Example',btn_clear:'Clear',btn_filter:'Filter',btn_refresh:'Refresh',btn_export_csv:'Export CSV',label_input_text:'Input Text',label_result:'Result',ph_test_input:'Paste text with personal data...',ph_quick_test:'Enter text to anonymize...',ph_search:'Search...',filter_all:'All Types',filter_name:'Name',filter_phone:'Phone',filter_pinfl:'PINFL',filter_passport:'Passport',filter_card:'Card',filter_email:'Email',filter_inn:'INN',filter_account:'Account',filter_date:'Date',filter_address:'Address',th_session:'Session',th_type:'Type',th_placeholder:'Placeholder',th_value:'Value',th_date:'Date',th_name:'Name',th_prefix:'Prefix',th_last_used:'Last Used',th_created:'Created',loading:'Loading...',no_data:'No data found',no_tokens:'No tokens yet',tokens_desc:'Manage your API access tokens',btn_new_token:'New Token',modal_create_token:'Create API Token',label_token_name:'Token Name',token_warning:'Copy this token now. It won\'t be shown again!',btn_copy:'Copy',btn_create:'Create',btn_close:'Close',btn_delete:'Delete',confirm_delete_token:'Delete this token?',db_desc:'Your account is connected to the platform database by default. You can connect your own PostgreSQL database if needed.',db_platform_badge:'Platform DB (Default)',db_platform_note:'You are using the shared platform database. Connect your own DB for isolated storage.',btn_connect_own:'Connect your own DB',btn_restore_default:'Restore default DB',label_host:'Host',label_port:'Port',label_database:'Database',label_user:'User',label_password:'Password',btn_save_test:'Save & Test',btn_test_conn:'Test Connection',btn_download_sql:'Download SQL Schema',db_saved:'Saved! Testing connection...',db_connected_verified:'Connected & all tables verified!',db_connected_missing:'Connected but missing tables: ',db_download_sql:'Download SQL',db_conn_failed:'Connection failed: ',db_test_failed:'Test failed',settings_profile:'Profile',settings_change_pw:'Change Password',label_fullname:'Full Name',label_company:'Company',label_current_pw:'Current Password',label_new_pw:'New Password',btn_save:'Save',btn_update_pw:'Update Password',saved:'Saved',pw_updated:'Password updated',never:'Never',items:'items',prev:'Prev',next:'Next',cw_desc:'Add exclusion words (stop-words) or additional names to improve detection accuracy.',cw_add_word:'Add Word',cw_word:'Word',cw_type:'Type',cw_stop_word:'Stop-word',cw_name_type:'Name',cw_your_words:'Your Words',cw_no_words:'Dictionary is empty',cw_added:'Word added',cw_deleted:'Word deleted'}
+};
+
+let lang=localStorage.getItem('pii_lang')||'ru';
+let theme=localStorage.getItem('pii_theme')||'light';
+
+function toggleSidebar(){const sb=document.getElementById('sidebar');sb.classList.toggle('collapsed');document.body.classList.toggle('sidebar-collapsed');localStorage.setItem('pii_sidebar',sb.classList.contains('collapsed')?'collapsed':'expanded')}
+if(localStorage.getItem('pii_sidebar')==='collapsed'){document.getElementById('sidebar').classList.add('collapsed');document.body.classList.add('sidebar-collapsed')}
+function setLang(l){lang=l;localStorage.setItem('pii_lang',l);applyAll()}
+function toggleTheme(){theme=theme==='light'?'dark':'light';localStorage.setItem('pii_theme',theme);applyAll()}
+function t(k){return(i18n[lang]&&i18n[lang][k])||k}
+
+function applyAll(){
+  document.documentElement.setAttribute('data-theme',theme);
+  document.getElementById('themeIcon').innerHTML=theme==='light'?'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>':'<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>';
+  document.querySelectorAll('.sw-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===lang.toUpperCase()));
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.getAttribute('data-i18n')));
+  document.querySelectorAll('[data-i18n-opt]').forEach(el=>el.textContent=t(el.getAttribute('data-i18n-opt')));
+  const qi=document.getElementById('quickTestInput');if(qi)qi.placeholder=t('ph_quick_test');
+  const ti=document.getElementById('testInput');if(ti)ti.placeholder=t('ph_test_input');
+  const fs=document.getElementById('filterSearch');if(fs)fs.placeholder=t('ph_search');
+  document.title='PII Anonymizer — '+t('nav_dashboard');
+}
+
+const API=window.location.origin;
+const tok=()=>localStorage.getItem('access_token');
+const hdrs=()=>({'Authorization':'Bearer '+tok(),'Content-Type':'application/json'});
+if(!tok()){window.location.href='/login'}
+try{const u=JSON.parse(localStorage.getItem('user')||'{}');document.getElementById('userEmail').textContent=u.email||'';if(u.is_admin)document.getElementById('adminLink').style.display='block'}catch(e){}
+
+let currentView='dashboard';
+function navigate(v){
+  currentView=v;
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===v));
+  if(v==='dashboard')loadDashboard();if(v==='data')loadData();if(v==='tokens')loadTokens();if(v==='database')loadDbConfig();if(v==='settings')loadSettings();if(v==='customwords')loadCustomWords();
+}
+
+function logout(){fetch(API+'/auth/logout',{method:'POST',credentials:'include'}).finally(()=>{localStorage.clear();window.location.href='/login'})}
+
+async function api(path,opts={}){
+  const res=await fetch(API+path,{...opts,headers:{...hdrs(),...(opts.headers||{})}});
+  if(res.status===401){localStorage.clear();window.location.href='/login';return}
+  return res;
+}
+
+async function loadDashboard(){
+  try{const[sr,hr]=await Promise.all([api('/api/v2/stats'),api('/health')]);
+    if(sr.ok){const s=await sr.json();document.getElementById('statSessions').textContent=s.total_sessions||0;document.getElementById('statMappings').textContent=s.total_mappings||0;document.getElementById('statTypes').textContent=s.pii_types_count||0}
+    if(hr.ok){const h=await hr.json();document.getElementById('statUptime').textContent=Math.floor(h.uptime_seconds/3600)+'h '+Math.floor((h.uptime_seconds%3600)/60)+'m'}
+  }catch(e){console.error(e)}
+}
+
+function loadExample(){
+  const ex="Клиент Алишер Каримов, ПИНФЛ 12345678901234, паспорт AB1234567, телефон +998901234567, карта 8600 1234 5678 9012, email alisher@mail.ru";
+  document.getElementById('quickTestInput').value=ex;const ti=document.getElementById('testInput');if(ti)ti.value=ex;
+}
+
+async function quickTest(){
+  const text=document.getElementById('quickTestInput').value;if(!text)return;
+  const res=await api('/anonymize',{method:'POST',body:JSON.stringify({text,return_mapping:true,use_llm:false})});if(!res.ok)return;
+  const d=await res.json();document.getElementById('quickTestOutput').textContent=d.anonymized;document.getElementById('quickTestResult').style.display='block';
+}
+
+async function runTest(){
+  const text=document.getElementById('testInput').value;if(!text)return;
+  const res=await api('/anonymize',{method:'POST',body:JSON.stringify({text,return_mapping:true,use_llm:false})});if(!res.ok)return;
+  const d=await res.json();document.getElementById('testOutput').textContent=d.anonymized;
+  document.getElementById('testPiiTags').innerHTML=(d.pii_found||[]).map(tp=>`<span class="badge badge-${tp.toLowerCase()}">${tp}</span>`).join('');
+  const mt=document.getElementById('testMapping');
+  if(d.mapping&&Object.keys(d.mapping).length){let h='<table class="glass-table"><thead><tr><th>'+t('th_placeholder')+'</th><th>'+t('th_value')+'</th></tr></thead><tbody>';for(const[k,v]of Object.entries(d.mapping))h+=`<tr><td>${k}</td><td>${v}</td></tr>`;h+='</tbody></table>';mt.innerHTML=h}else mt.innerHTML='';
+  document.getElementById('testResult').style.display='block';
+}
+
+let dataPage=1;
+async function loadData(page){
+  if(page)dataPage=page;const type=document.getElementById('filterType').value;const search=document.getElementById('filterSearch').value;
+  let url=`/api/v2/me/data?page=${dataPage}&per_page=25`;if(type)url+=`&pii_type=${type}`;if(search)url+=`&search=${encodeURIComponent(search)}`;
+  const res=await api(url);if(!res.ok)return;const d=await res.json();const body=document.getElementById('dataBody');
+  if(!d.data||!d.data.length){body.innerHTML='<tr><td colspan="5" class="empty">'+t('no_data')+'</td></tr>';document.getElementById('dataPagination').innerHTML='';return}
+  body.innerHTML=d.data.map(r=>`<tr><td class="text-xs">${(r.session_id||'').substring(0,12)}...</td><td><span class="badge badge-${(r.pii_type||'').toLowerCase()}">${r.pii_type}</span></td><td class="text-xs">${r.placeholder}</td><td>${r.original_value}</td><td class="text-xs text-muted">${new Date(r.created_at).toLocaleString()}</td></tr>`).join('');
+  const tp=Math.ceil(d.total/25),pg=document.getElementById('dataPagination');if(tp<=1){pg.innerHTML='';return}
+  let ph='';if(dataPage>1)ph+=`<button class="page-btn" onclick="loadData(${dataPage-1})">${t('prev')}</button>`;
+  for(let i=1;i<=Math.min(tp,7);i++)ph+=`<button class="page-btn ${i===dataPage?'active':''}" onclick="loadData(${i})">${i}</button>`;
+  if(dataPage<tp)ph+=`<button class="page-btn" onclick="loadData(${dataPage+1})">${t('next')}</button>`;
+  ph+=`<span class="page-info">${d.total} ${t('items')}</span>`;pg.innerHTML=ph;
+}
+
+async function exportData(){
+  const type=document.getElementById('filterType').value,search=document.getElementById('filterSearch').value;
+  let url='/api/v2/me/data/export?';if(type)url+=`pii_type=${type}&`;if(search)url+=`search=${encodeURIComponent(search)}&`;
+  const res=await api(url);if(!res.ok)return;const blob=await res.blob();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pii_export.csv';a.click();
+}
+
+async function loadTokens(){
+  const res=await api('/api/v2/me/tokens');if(!res.ok)return;const tokens=await res.json();const body=document.getElementById('tokensBody');
+  if(!tokens.length){body.innerHTML='<tr><td colspan="5" class="empty">'+t('no_tokens')+'</td></tr>';return}
+  body.innerHTML=tokens.map(tk=>`<tr><td>${tk.name}</td><td class="text-xs" style="font-family:monospace">${tk.token_prefix}...</td><td class="text-xs text-muted">${tk.last_used_at?new Date(tk.last_used_at).toLocaleString():t('never')}</td><td class="text-xs text-muted">${new Date(tk.created_at).toLocaleString()}</td><td><button class="btn btn-danger btn-sm" onclick="deleteToken(${tk.id})">${t('btn_delete')}</button></td></tr>`).join('');
+}
+
+function showCreateToken(){document.getElementById('tokenCreated').style.display='none';document.getElementById('createTokenBtn').style.display='';document.getElementById('tokenModal').classList.add('show')}
+function closeModal(){document.getElementById('tokenModal').classList.remove('show')}
+
+async function createToken(){
+  const name=document.getElementById('tokenName').value||'Default';const res=await api('/api/v2/me/tokens',{method:'POST',body:JSON.stringify({name})});if(!res.ok)return;
+  const d=await res.json();document.getElementById('newTokenValue').textContent=d.token;document.getElementById('tokenCreated').style.display='block';document.getElementById('createTokenBtn').style.display='none';loadTokens();
+}
+function copyToken(){navigator.clipboard.writeText(document.getElementById('newTokenValue').textContent)}
+async function deleteToken(id){if(!confirm(t('confirm_delete_token')))return;await api(`/api/v2/me/tokens/${id}`,{method:'DELETE'});loadTokens()}
+
+function showCustomDbForm(){document.getElementById('dbPlatformBanner').style.display='none';const fc=document.getElementById('dbFormCard');fc.style.display='block';document.getElementById('dbHost').value='';document.getElementById('dbPort').value='5432';document.getElementById('dbName').value='';document.getElementById('dbUser').value='';document.getElementById('dbPassword').value='';document.getElementById('dbStatus').innerHTML=''}
+
+async function loadDbConfig(){
+  try{const res=await api('/api/v2/me/database');if(res.ok){const c=await res.json();document.getElementById('dbHost').value=c.db_host||'';document.getElementById('dbPort').value=c.db_port||5432;document.getElementById('dbName').value=c.db_name||'';document.getElementById('dbUser').value=c.db_user||'';
+    const isPlatform=c.db_host==='pii-postgres'&&c.db_name==='pii_anonymizer';
+    document.getElementById('dbPlatformBanner').style.display=isPlatform?'block':'none';
+    document.getElementById('dbFormCard').style.display=isPlatform?'none':'block';
+    if(isPlatform)applyAll();
+    const restBtn=isPlatform?'':'<br><button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="restoreDefaultDb()">'+t('btn_restore_default')+'</button>';
+    document.getElementById('dbStatus').innerHTML=c.is_verified?'<span style="color:var(--green)">'+t('db_connected_verified')+'</span>':'<span style="color:var(--yellow)">'+t('db_test_failed')+'</span>'+restBtn}
+    else{document.getElementById('dbFormCard').style.display='block'}}catch(e){document.getElementById('dbFormCard').style.display='block'}
+}
+
+async function saveDbConfig(e){
+  e.preventDefault();const body={db_host:document.getElementById('dbHost').value,db_port:parseInt(document.getElementById('dbPort').value),db_name:document.getElementById('dbName').value,db_user:document.getElementById('dbUser').value,db_password:document.getElementById('dbPassword').value};
+  const res=await api('/api/v2/me/database',{method:'POST',body:JSON.stringify(body)});const st=document.getElementById('dbStatus');
+  if(res.ok){st.innerHTML='<span style="color:var(--green)">'+t('db_saved')+'</span>';testDbConnection()}else{const d=await res.json();st.innerHTML=`<span style="color:var(--red)">${d.detail||'Error'}</span>`}return false;
+}
+
+async function testDbConnection(){
+  const res=await api('/api/v2/me/database/test',{method:'POST'});const st=document.getElementById('dbStatus');
+  const restoreBtn='<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="restoreDefaultDb()">'+t('btn_restore_default')+'</button>';
+  if(!res.ok){st.innerHTML='<span style="color:var(--red)">'+t('db_test_failed')+'</span>'+restoreBtn;return}
+  const d=await res.json();if(d.connected){let schema=d.schema||{};let missing=Object.entries(schema).filter(([k,v])=>!v).map(([k])=>k);
+    if(missing.length)st.innerHTML=`<span style="color:var(--yellow)">${t('db_connected_missing')}${missing.join(', ')}. <a href="/client_schema.sql" download style="color:var(--accent)">${t('db_download_sql')}</a></span>`;
+    else st.innerHTML='<span style="color:var(--green)">'+t('db_connected_verified')+'</span>';
+  }else st.innerHTML=`<span style="color:var(--red)">${t('db_conn_failed')}${d.error||'Unknown'}</span>`+restoreBtn;
+}
+
+async function restoreDefaultDb(){
+  const st=document.getElementById('dbStatus');st.innerHTML='<span style="color:var(--yellow)">...</span>';
+  const res=await api('/api/v2/me/database',{method:'DELETE'});
+  if(!res.ok){st.innerHTML='<span style="color:var(--red)">Error</span>';return}
+  const reg=await api('/api/v2/me/database/restore-default',{method:'POST'});
+  if(reg&&reg.ok){document.getElementById('dbFormCard').style.display='none';document.getElementById('dbPlatformBanner').style.display='block';st.innerHTML='';applyAll()}
+  else{loadDbConfig()}
+}
+
+function loadSettings(){try{const u=JSON.parse(localStorage.getItem('user')||'{}');document.getElementById('settName').value=u.full_name||'';document.getElementById('settCompany').value=u.company_name||''}catch(e){}}
+
+async function updateProfile(){
+  const res=await api('/api/v2/me?full_name='+encodeURIComponent(document.getElementById('settName').value)+'&company_name='+encodeURIComponent(document.getElementById('settCompany').value),{method:'PUT'});
+  if(res.ok){const u=await res.json();localStorage.setItem('user',JSON.stringify(u));document.getElementById('settMsg').innerHTML='<span style="color:var(--green)">'+t('saved')+'</span>'}
+}
+
+async function changePassword(){
+  const cur=document.getElementById('settCurPw').value,nw=document.getElementById('settNewPw').value;if(!cur||!nw)return;
+  const res=await api('/api/v2/me/password',{method:'PUT',body:JSON.stringify({current_password:cur,new_password:nw})});const msg=document.getElementById('settMsg');
+  if(res.ok){msg.innerHTML='<span style="color:var(--green)">'+t('pw_updated')+'</span>';document.getElementById('settCurPw').value='';document.getElementById('settNewPw').value=''}
+  else{const d=await res.json();msg.innerHTML=`<span style="color:var(--red)">${d.detail||'Error'}</span>`}
+}
+
+// === Custom Words ===
+async function loadCustomWords(){
+  try{
+    const res=await api('/api/v2/me/custom-words');if(!res||!res.ok)return;
+    const d=await res.json();const words=d.words||[];
+    const el=document.getElementById('cwWordList');
+    if(!words.length){el.innerHTML='<div class="empty">'+t('cw_no_words')+'</div>';return}
+    el.innerHTML=words.map(w=>`<div class="word-item"><div><span class="word-item-text">${w.word}</span><span class="word-item-type badge ${w.word_type==='name'?'badge-name':'badge-phone'}">${w.word_type==='name'?t('cw_name_type'):t('cw_stop_word')}</span></div><button class="word-item-del" onclick="deleteCustomWord(${w.id})" title="${t('btn_delete')}">&times;</button></div>`).join('');
+  }catch(e){console.error('Custom words error:',e)}
+}
+
+async function addCustomWord(){
+  const word=document.getElementById('cwWordInput').value.trim();
+  const wordType=document.getElementById('cwTypeSelect').value;
+  if(!word)return;
+  try{
+    const res=await api('/api/v2/me/custom-words',{method:'POST',body:JSON.stringify({word,word_type:wordType})});
+    if(res&&res.ok){document.getElementById('cwWordInput').value='';loadCustomWords()}
+    else{const d=await res.json();alert(d.detail||'Error')}
+  }catch(e){console.error(e)}
+}
+
+async function deleteCustomWord(id){
+  if(!confirm(t('btn_delete')+'?'))return;
+  try{await api(`/api/v2/me/custom-words/${id}`,{method:'DELETE'});loadCustomWords()}catch(e){console.error(e)}
+}
+
+applyAll();loadDashboard();
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PII Anonymizer — Вход</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--glass-bg:rgba(255,255,255,0.65);
+--glass-border:rgba(0,0,0,0.08);
+--glass-blur:blur(20px);
+--accent:#667eea;
+--accent2:#764ba2;
+--text:#1a1a2e;
+--text2:rgba(0,0,0,0.5);
+--input-bg:rgba(255,255,255,.7);
+--input-border:rgba(0,0,0,.1);
+--input-ph:rgba(0,0,0,.3);
+--body-bg:linear-gradient(135deg,#e8eaf6 0%,#f5f5f5 40%,#e3f2fd 100%);
+--orb-opacity:.25;
+--error:#ef4444;
+--success:#22c55e;
+--radius:18px;
+--tab-bg:rgba(0,0,0,.04);
+--shadow:0 8px 32px rgba(0,0,0,.08);
+}
+[data-theme="dark"]{
+--glass-bg:rgba(255,255,255,0.07);
+--glass-border:rgba(255,255,255,0.12);
+--text:#fff;
+--text2:rgba(255,255,255,0.65);
+--input-bg:rgba(255,255,255,.06);
+--input-border:rgba(255,255,255,.1);
+--input-ph:rgba(255,255,255,.3);
+--body-bg:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%);
+--orb-opacity:.35;
+--error:#f87171;
+--success:#4ade80;
+--tab-bg:rgba(255,255,255,.06);
+--shadow:0 8px 32px rgba(0,0,0,.37);
+}
+body{
+min-height:100vh;
+background:var(--body-bg);
+font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+display:flex;align-items:center;justify-content:center;
+overflow:hidden;color:var(--text);transition:background .3s,color .3s;
+}
+.orb{position:fixed;border-radius:50%;filter:blur(100px);opacity:var(--orb-opacity);pointer-events:none;animation:float 20s infinite;transition:opacity .3s}
+.orb-1{width:400px;height:400px;background:#667eea;top:-100px;left:-100px}
+.orb-2{width:350px;height:350px;background:#764ba2;bottom:-80px;right:-80px;animation-delay:-7s}
+.orb-3{width:250px;height:250px;background:#4ade80;top:50%;left:60%;animation-delay:-14s}
+@keyframes float{0%,100%{transform:translate(0,0)}33%{transform:translate(30px,-40px)}66%{transform:translate(-20px,30px)}}
+
+/* Top bar */
+.top-bar{position:fixed;top:16px;right:16px;z-index:50;display:flex;gap:8px;align-items:center}
+.switcher{display:flex;gap:2px;background:var(--glass-bg);backdrop-filter:blur(12px);border-radius:10px;padding:3px;border:1px solid var(--glass-border);box-shadow:0 2px 8px rgba(0,0,0,.06);transition:background .3s}
+.sw-btn{padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:none;background:transparent;color:var(--text2);transition:.2s}
+.sw-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 8px rgba(102,126,234,.25)}
+/* Theme toggle */
+.theme-toggle{position:relative;width:52px;height:28px;border-radius:14px;background:var(--tab-bg);border:1px solid var(--glass-border);cursor:pointer;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.theme-toggle .knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:.3s;display:flex;align-items:center;justify-content:center}
+[data-theme="dark"] .theme-toggle .knob{left:26px}
+[data-theme="dark"] .theme-toggle{background:rgba(255,255,255,.15)}
+.theme-toggle svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.container{position:relative;z-index:1;width:100%;max-width:420px;padding:20px}
+.glass-card{
+background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+border-radius:var(--radius);border:1px solid var(--glass-border);
+box-shadow:var(--shadow);padding:40px 32px;transition:background .3s,border-color .3s;
+}
+.logo{text-align:center;margin-bottom:28px}
+.logo h1{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.logo p{color:var(--text2);font-size:13px;margin-top:4px}
+.tabs{display:flex;gap:4px;background:var(--tab-bg);border-radius:10px;padding:3px;margin-bottom:24px;transition:background .3s}
+.tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:.2s;color:var(--text2)}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 12px rgba(102,126,234,.3)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+.glass-input{
+width:100%;padding:14px 16px;background:var(--input-bg);
+border:1px solid var(--input-border);border-radius:10px;color:var(--text);font-size:15px;
+transition:.3s;outline:none;
+}
+.glass-input:focus{border-color:var(--accent);box-shadow:0 0 20px rgba(102,126,234,.12)}
+.glass-input::placeholder{color:var(--input-ph)}
+.btn{
+width:100%;padding:14px;border:none;border-radius:10px;
+background:linear-gradient(135deg,var(--accent),var(--accent2));
+color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:.3s;margin-top:8px;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(102,126,234,.4)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.error-msg{color:var(--error);font-size:13px;margin-top:12px;text-align:center;display:none}
+.success-msg{color:var(--success);font-size:13px;margin-top:12px;text-align:center;display:none}
+.footer{text-align:center;margin-top:20px;color:var(--text2);font-size:12px}
+.footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="top-bar">
+  <div class="switcher">
+    <button class="sw-btn" onclick="setLang('ru')">RU</button>
+    <button class="sw-btn" onclick="setLang('uz')">UZ</button>
+    <button class="sw-btn" onclick="setLang('en')">EN</button>
+  </div>
+  <div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><div class="knob" id="themeIcon"></div></div>
+</div>
+
+<div class="container">
+<div class="glass-card">
+  <div class="logo">
+    <h1>PII Anonymizer</h1>
+    <p data-i18n="subtitle"></p>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('login')" data-i18n="tab_login"></div>
+    <div class="tab" onclick="switchTab('register')" data-i18n="tab_register"></div>
+  </div>
+  <form id="loginForm" onsubmit="return handleLogin(event)">
+    <div class="form-group"><label data-i18n="label_email"></label><input class="glass-input" type="email" id="loginEmail" required></div>
+    <div class="form-group"><label data-i18n="label_password"></label><input class="glass-input" type="password" id="loginPassword" required></div>
+    <button class="btn" type="submit" id="loginBtn" data-i18n="btn_login"></button>
+  </form>
+  <form id="registerForm" style="display:none" onsubmit="return handleRegister(event)">
+    <div class="form-group"><label data-i18n="label_email"></label><input class="glass-input" type="email" id="regEmail" required></div>
+    <div class="form-group"><label data-i18n="label_fullname"></label><input class="glass-input" type="text" id="regName"></div>
+    <div class="form-group"><label data-i18n="label_company"></label><input class="glass-input" type="text" id="regCompany"></div>
+    <div class="form-group"><label data-i18n="label_password"></label><input class="glass-input" type="password" id="regPassword" required minlength="6"></div>
+    <button class="btn" type="submit" id="regBtn" data-i18n="btn_register"></button>
+  </form>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="success-msg" id="successMsg"></div>
+</div>
+<div class="footer"><a href="/docs" target="_blank">API Docs</a></div>
+</div>
+
+<script>
+const i18n={
+  ru:{subtitle:'Безопасная защита персональных данных',tab_login:'Вход',tab_register:'Регистрация',label_email:'Электронная почта',label_password:'Пароль',label_fullname:'Полное имя',label_company:'Компания',btn_login:'Войти',btn_register:'Создать аккаунт',signing_in:'Вход...',creating:'Создание...',login_failed:'Ошибка входа',reg_failed:'Ошибка регистрации',ph_email:'your@email.com',ph_password:'••••••••',ph_name:'',ph_company:'Название компании',ph_password_min:'Минимум 6 символов'},
+  uz:{subtitle:'Shaxsiy ma\'lumotlarni xavfsiz himoya qilish',tab_login:'Kirish',tab_register:'Ro\'yxatdan o\'tish',label_email:'Elektron pochta',label_password:'Parol',label_fullname:'To\'liq ism',label_company:'Kompaniya',btn_login:'Kirish',btn_register:'Hisob yaratish',signing_in:'Kirish...',creating:'Yaratilmoqda...',login_failed:'Kirish xatosi',reg_failed:'Ro\'yxatdan o\'tish xatosi',ph_email:'your@email.com',ph_password:'••••••••',ph_name:'',ph_company:'Kompaniya nomi',ph_password_min:'Kamida 6 belgi'},
+  en:{subtitle:'Secure Personal Data Protection',tab_login:'Login',tab_register:'Register',label_email:'Email',label_password:'Password',label_fullname:'Full Name',label_company:'Company',btn_login:'Sign In',btn_register:'Create Account',signing_in:'Signing in...',creating:'Creating...',login_failed:'Login failed',reg_failed:'Registration failed',ph_email:'your@email.com',ph_password:'••••••••',ph_name:'',ph_company:'Company name',ph_password_min:'Min 6 characters'}
+};
+let lang=localStorage.getItem('pii_lang')||'ru';
+let theme=localStorage.getItem('pii_theme')||'light';
+
+function setLang(l){lang=l;localStorage.setItem('pii_lang',l);applyAll()}
+function toggleTheme(){theme=theme==='light'?'dark':'light';localStorage.setItem('pii_theme',theme);applyAll()}
+function t(k){return(i18n[lang]&&i18n[lang][k])||k}
+
+function applyAll(){
+  document.documentElement.setAttribute('data-theme',theme);
+  document.getElementById('themeIcon').innerHTML=theme==='light'?'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>':'<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>';
+  document.querySelectorAll('.sw-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===lang.toUpperCase()));
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.getAttribute('data-i18n')));
+  const ids={loginEmail:'ph_email',loginPassword:'ph_password',regEmail:'ph_email',regName:'ph_name',regCompany:'ph_company',regPassword:'ph_password_min'};
+  for(const[id,k]of Object.entries(ids)){const el=document.getElementById(id);if(el)el.placeholder=t(k)}
+  document.title='PII Anonymizer — '+t('tab_login');
+}
+
+const API=window.location.origin;
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((tb,i)=>tb.classList.toggle('active',i===(tab==='login'?0:1)));
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
+  document.getElementById('errorMsg').style.display='none';document.getElementById('successMsg').style.display='none';
+}
+function showError(msg){const e=document.getElementById('errorMsg');e.textContent=msg;e.style.display='block';document.getElementById('successMsg').style.display='none'}
+
+async function handleLogin(e){
+  e.preventDefault();
+  const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent=t('signing_in');
+  try{
+    const res=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('loginEmail').value,password:document.getElementById('loginPassword').value}),credentials:'include'});
+    const data=await res.json();if(!res.ok)throw new Error(data.detail||t('login_failed'));
+    localStorage.setItem('access_token',data.access_token);localStorage.setItem('user',JSON.stringify(data.user));
+    window.location.href='/dashboard';
+  }catch(err){showError(err.message)}finally{btn.disabled=false;btn.textContent=t('btn_login')}
+  return false;
+}
+
+async function handleRegister(e){
+  e.preventDefault();
+  const btn=document.getElementById('regBtn');btn.disabled=true;btn.textContent=t('creating');
+  try{
+    const res=await fetch(API+'/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('regEmail').value,password:document.getElementById('regPassword').value,full_name:document.getElementById('regName').value||null,company_name:document.getElementById('regCompany').value||null})});
+    const data=await res.json();if(!res.ok)throw new Error(data.detail||t('reg_failed'));
+    localStorage.setItem('access_token',data.access_token);localStorage.setItem('user',JSON.stringify(data.user));
+    window.location.href='/dashboard';
+  }catch(err){showError(err.message)}finally{btn.disabled=false;btn.textContent=t('btn_register')}
+  return false;
+}
+
+if(localStorage.getItem('access_token'))window.location.href='/dashboard';
+applyAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PII Anonymizer — Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--glass-bg:rgba(255,255,255,0.55);
+--glass-border:rgba(0,0,0,0.07);
+--glass-blur:blur(16px);
+--accent:#667eea;--accent2:#764ba2;
+--green:#16a34a;--red:#ef4444;--yellow:#d97706;
+--text:#1a1a2e;--text2:rgba(0,0,0,0.5);--text3:rgba(0,0,0,0.3);
+--input-bg:rgba(255,255,255,.6);--input-border:rgba(0,0,0,.08);
+--body-bg:linear-gradient(135deg,#e8eaf6 0%,#f5f5f5 40%,#e3f2fd 100%);
+--orb-opacity:.18;--sidebar-bg:rgba(255,255,255,0.6);
+--hover-bg:rgba(0,0,0,.04);--active-nav:rgba(102,126,234,.12);
+--table-hover:rgba(0,0,0,.02);--table-border:rgba(0,0,0,.04);
+--tab-bg:rgba(0,0,0,.04);--select-bg:#fff;
+--shadow:0 4px 24px rgba(0,0,0,.06);
+--radius:16px;--sidebar-w:240px;
+--badge-admin:rgba(102,126,234,.15);--badge-admin-text:#667eea;
+--badge-active:rgba(22,163,74,.15);--badge-active-text:#16a34a;
+--badge-inactive:rgba(239,68,68,.15);--badge-inactive-text:#ef4444;
+}
+[data-theme="dark"]{
+--glass-bg:rgba(255,255,255,0.06);
+--glass-border:rgba(255,255,255,0.1);
+--text:#fff;--text2:rgba(255,255,255,0.6);--text3:rgba(255,255,255,0.35);
+--input-bg:rgba(255,255,255,.06);--input-border:rgba(255,255,255,.1);
+--body-bg:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%);
+--orb-opacity:.2;--sidebar-bg:rgba(255,255,255,0.04);
+--hover-bg:rgba(255,255,255,.06);--active-nav:rgba(102,126,234,.18);
+--table-hover:rgba(255,255,255,.03);--table-border:rgba(255,255,255,.04);
+--tab-bg:rgba(255,255,255,.06);--select-bg:#1a1a2e;
+--shadow:0 8px 32px rgba(0,0,0,.2);
+--green:#4ade80;--red:#f87171;--yellow:#fbbf24;
+--badge-admin:rgba(102,126,234,.25);--badge-admin-text:#a5b4fc;
+--badge-active:rgba(74,222,128,.2);--badge-active-text:#4ade80;
+--badge-inactive:rgba(248,113,113,.2);--badge-inactive-text:#f87171;
+}
+body{min-height:100vh;background:var(--body-bg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;color:var(--text);display:flex;transition:background .3s,color .3s}
+.orb{position:fixed;border-radius:50%;filter:blur(100px);opacity:var(--orb-opacity);pointer-events:none;animation:float 25s infinite;transition:opacity .3s}
+.orb-1{width:500px;height:500px;background:#667eea;top:-150px;left:-150px}
+.orb-2{width:400px;height:400px;background:#764ba2;bottom:-100px;right:-100px;animation-delay:-10s}
+@keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-30px)}}
+
+/* Top bar */
+.top-bar{position:fixed;top:16px;right:16px;z-index:50;display:flex;gap:8px;align-items:center}
+.switcher{display:flex;gap:2px;background:var(--glass-bg);backdrop-filter:blur(12px);border-radius:10px;padding:3px;border:1px solid var(--glass-border);box-shadow:0 2px 8px rgba(0,0,0,.06);transition:background .3s}
+.sw-btn{padding:5px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;border:none;background:transparent;color:var(--text2);transition:.2s}
+.sw-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 8px rgba(102,126,234,.25)}
+.theme-toggle{position:relative;width:52px;height:28px;border-radius:14px;background:var(--tab-bg);border:1px solid var(--glass-border);cursor:pointer;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.theme-toggle .knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:.3s;display:flex;align-items:center;justify-content:center}
+[data-theme="dark"] .theme-toggle .knob{left:26px}
+[data-theme="dark"] .theme-toggle{background:rgba(255,255,255,.15)}
+.theme-toggle svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);height:100vh;position:fixed;left:0;top:0;z-index:10;background:var(--sidebar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid var(--glass-border);display:flex;flex-direction:column;padding:20px 0;transition:background .3s}
+.sidebar-logo{padding:0 20px 24px;border-bottom:1px solid var(--glass-border)}
+.sidebar-logo h2{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.sidebar-logo span{font-size:11px;color:var(--text2)}
+.nav{flex:1;padding:16px 8px;display:flex;flex-direction:column;gap:2px}
+.nav-item{padding:11px 16px;border-radius:10px;cursor:pointer;font-size:14px;color:var(--text2);transition:.2s;display:flex;align-items:center;gap:10px}
+.nav-item:hover{background:var(--hover-bg);color:var(--text)}
+.nav-item.active{background:var(--active-nav);color:var(--accent)}
+.nav-item svg{width:18px;height:18px;opacity:.7}
+.nav-bottom{padding:12px 20px;border-top:1px solid var(--glass-border)}
+.nav-bottom .user-email{font-size:12px;color:var(--text2);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis}
+.logout-btn{font-size:13px;color:var(--red);cursor:pointer;background:none;border:none;padding:0}
+.logout-btn:hover{text-decoration:underline}
+.back-link{font-size:13px;color:var(--accent);cursor:pointer;background:none;border:none;padding:0;margin-top:6px;display:block}
+.back-link:hover{text-decoration:underline}
+
+.main{margin-left:var(--sidebar-w);flex:1;padding:28px 32px;min-height:100vh;position:relative}
+.page-title{font-size:22px;font-weight:700;margin-bottom:20px;letter-spacing:-.3px}
+
+.glass{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-radius:var(--radius);border:1px solid var(--glass-border);box-shadow:var(--shadow);transition:background .3s,border-color .3s}
+.card{padding:24px}.card-sm{padding:18px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{text-align:center}
+.stat-val{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:12px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Search bar */
+.search-bar{display:flex;gap:10px;margin-bottom:20px;align-items:center}
+.search-input{flex:1;padding:10px 16px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:10px;color:var(--text);font-size:14px;outline:none;transition:.3s}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 20px rgba(102,126,234,.12)}
+.search-input::placeholder{color:var(--text3)}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);padding:10px 12px;text-align:left;border-bottom:1px solid var(--table-border);font-weight:600}
+td{padding:12px;font-size:13px;border-bottom:1px solid var(--table-border);vertical-align:middle}
+tr:hover td{background:var(--table-hover)}
+
+/* Badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-admin{background:var(--badge-admin);color:var(--badge-admin-text)}
+.badge-active{background:var(--badge-active);color:var(--badge-active-text)}
+.badge-inactive{background:var(--badge-inactive);color:var(--badge-inactive-text)}
+.badge-user{background:var(--tab-bg);color:var(--text2)}
+
+/* Action buttons */
+.act-btn{padding:5px 12px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text);font-size:12px;cursor:pointer;transition:.2s;white-space:nowrap}
+.act-btn:hover{border-color:var(--accent);color:var(--accent)}
+.act-btn.danger{color:var(--red)}
+.act-btn.danger:hover{border-color:var(--red);background:var(--badge-inactive)}
+.act-btn.admin-toggle{color:var(--accent)}
+.actions-cell{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Pagination */
+.pagination{display:flex;gap:6px;justify-content:center;margin-top:16px;align-items:center}
+.pg-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text2);font-size:13px;cursor:pointer;transition:.2s}
+.pg-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pg-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.pg-info{font-size:13px;color:var(--text2)}
+
+/* Modal */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.3);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{width:100%;max-width:500px;border-radius:var(--radius);padding:32px;position:relative;background:#fff;box-shadow:0 16px 48px rgba(0,0,0,.15)}
+[data-theme="dark"] .modal{background:#1e1b3a}
+.modal h3{font-size:18px;margin-bottom:16px}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:22px;color:var(--text2);cursor:pointer}
+.modal-body{font-size:14px;color:var(--text2);line-height:1.6}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.btn{padding:10px 20px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:.3s}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(102,126,234,.3)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
+.btn-danger:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(239,68,68,.3)}
+.btn-ghost{background:var(--tab-bg);color:var(--text2)}
+.btn-ghost:hover{background:var(--hover-bg)}
+
+/* User detail card */
+.user-detail{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.user-detail .label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:4px}
+.user-detail .value{font-size:15px;font-weight:500}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;z-index:200;padding:14px 24px;border-radius:12px;font-size:14px;font-weight:500;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(100px);opacity:0;transition:.3s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:linear-gradient(135deg,#16a34a,#15803d)}
+.toast.error{background:linear-gradient(135deg,#ef4444,#dc2626)}
+
+.view{display:none}.view.active{display:block}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="top-bar">
+  <div class="switcher">
+    <button class="sw-btn" onclick="setLang('ru')">RU</button>
+    <button class="sw-btn" onclick="setLang('uz')">UZ</button>
+    <button class="sw-btn" onclick="setLang('en')">EN</button>
+  </div>
+  <div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><div class="knob" id="themeIcon"></div></div>
+</div>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <h2>PII Anonymizer</h2>
+    <span data-i18n="admin_panel"></span>
+  </div>
+  <div class="nav">
+    <div class="nav-item active" onclick="showView('overview')" data-nav="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span data-i18n="nav_overview"></span>
+    </div>
+    <div class="nav-item" onclick="showView('users')" data-nav="users">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span data-i18n="nav_users"></span>
+    </div>
+    <div class="nav-item" onclick="showView('sessions')" data-nav="sessions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span data-i18n="nav_sessions"></span>
+    </div>
+    <div class="nav-item" onclick="showView('audit')" data-nav="audit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span data-i18n="nav_audit"></span>
+    </div>
+  </div>
+  <div class="nav-bottom">
+    <div class="user-email" id="adminEmail"></div>
+    <button class="back-link" onclick="window.location.href='/dashboard'" data-i18n="back_dashboard"></button>
+    <button class="logout-btn" onclick="logout()" data-i18n="btn_logout"></button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Overview -->
+  <div class="view active" id="view-overview">
+    <div class="page-title" data-i18n="title_overview"></div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="glass card" style="margin-top:16px">
+      <h3 style="font-size:16px;margin-bottom:12px" data-i18n="recent_users"></h3>
+      <table id="recentUsersTable">
+        <thead><tr>
+          <th>ID</th>
+          <th data-i18n="th_email"></th>
+          <th data-i18n="th_name"></th>
+          <th data-i18n="th_role"></th>
+          <th data-i18n="th_status"></th>
+          <th data-i18n="th_created"></th>
+        </tr></thead>
+        <tbody id="recentUsersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Users -->
+  <div class="view" id="view-users">
+    <div class="page-title" data-i18n="title_users"></div>
+    <div class="search-bar">
+      <input class="search-input" id="userSearch" data-i18n-ph="search_users" onkeyup="debounceSearch()">
+    </div>
+    <div class="glass card">
+      <table>
+        <thead><tr>
+          <th>ID</th>
+          <th data-i18n="th_email"></th>
+          <th data-i18n="th_name"></th>
+          <th data-i18n="th_company"></th>
+          <th data-i18n="th_role"></th>
+          <th data-i18n="th_status"></th>
+          <th data-i18n="th_tokens"></th>
+          <th data-i18n="th_created"></th>
+          <th data-i18n="th_actions"></th>
+        </tr></thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+      <div class="pagination" id="usersPagination"></div>
+    </div>
+  </div>
+
+  <!-- User Detail Modal -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <h3 id="modalTitle"></h3>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <!-- Sessions -->
+  <div class="view" id="view-sessions">
+    <div class="page-title" data-i18n="title_sessions"></div>
+    <div class="glass card">
+      <table>
+        <thead><tr>
+          <th>Session ID</th>
+          <th data-i18n="th_user"></th>
+          <th>Contact</th>
+          <th>Page</th>
+          <th>Channel</th>
+          <th data-i18n="th_mappings"></th>
+          <th data-i18n="th_created"></th>
+        </tr></thead>
+        <tbody id="sessionsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Audit -->
+  <div class="view" id="view-audit">
+    <div class="page-title" data-i18n="title_audit"></div>
+    <div class="glass card">
+      <table>
+        <thead><tr>
+          <th>ID</th>
+          <th data-i18n="th_action"></th>
+          <th data-i18n="th_user"></th>
+          <th>Session</th>
+          <th data-i18n="th_details"></th>
+          <th>IP</th>
+          <th data-i18n="th_created"></th>
+        </tr></thead>
+        <tbody id="auditBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const i18n={
+  ru:{
+    admin_panel:'Admin Panel',
+    nav_overview:'Обзор',nav_users:'Пользователи',nav_sessions:'Сессии',nav_audit:'Аудит',
+    title_overview:'Обзор системы',title_users:'Управление пользователями',title_sessions:'PII Сессии',title_audit:'Журнал аудита',
+    back_dashboard:'Dashboard',btn_logout:'Выйти',
+    stat_users:'Пользователи',stat_active:'Активные',stat_admins:'Админы',stat_tokens:'API Токены',stat_sessions:'Сессии',stat_mappings:'PII записи',stat_dbs:'Подключ. БД',
+    th_email:'Email',th_name:'Имя',th_company:'Компания',th_role:'Роль',th_status:'Статус',th_tokens:'Токены',th_created:'Создан',th_actions:'Действия',th_user:'Пользователь',th_mappings:'Маппинги',th_action:'Действие',th_details:'Детали',
+    role_admin:'Админ',role_user:'Юзер',status_active:'Активен',status_inactive:'Заблокирован',
+    search_users:'Поиск по email, имени, компании...',
+    recent_users:'Последние пользователи',
+    btn_details:'Детали',btn_toggle_admin:'Админ',btn_block:'Блок',btn_unblock:'Разблок',btn_delete:'Удалить',btn_reset_pwd:'Сбросить пароль',btn_cancel:'Отмена',btn_confirm:'Подтвердить',
+    confirm_delete:'Вы уверены что хотите удалить пользователя',confirm_delete2:'Все данные будут утеряны.',
+    confirm_reset:'Сбросить пароль для',confirm_reset2:'Будет сгенерирован случайный временный пароль — скопируйте его, он показывается один раз.',pwd_reset_to:'Временный пароль:',
+    user_detail:'Детали пользователя',
+    lbl_id:'ID',lbl_email:'Email',lbl_name:'Полное имя',lbl_company:'Компания',lbl_role:'Роль',lbl_status:'Статус',lbl_created:'Создан',lbl_updated:'Обновлен',lbl_sessions:'Сессий',lbl_mappings:'PII записей',lbl_tokens:'API токены',lbl_db:'База данных',
+    no_db:'Не подключена',yes_db:'Подключена',verified:'Проверена',not_verified:'Не проверена',
+    toast_admin_on:'Права админа выданы',toast_admin_off:'Права админа сняты',toast_blocked:'Пользователь заблокирован',toast_unblocked:'Пользователь разблокирован',toast_deleted:'Пользователь удален',toast_pwd_reset:'Пароль сброшен',toast_error:'Ошибка',
+    no_data:'Нет данных',not_admin:'Доступ запрещен. Требуются права администратора.'
+  },
+  uz:{
+    admin_panel:'Admin Panel',
+    nav_overview:'Umumiy ko\'rinish',nav_users:'Foydalanuvchilar',nav_sessions:'Sessiyalar',nav_audit:'Audit',
+    title_overview:'Tizim ko\'rinishi',title_users:'Foydalanuvchilarni boshqarish',title_sessions:'PII Sessiyalar',title_audit:'Audit jurnali',
+    back_dashboard:'Dashboard',btn_logout:'Chiqish',
+    stat_users:'Foydalanuvchilar',stat_active:'Faol',stat_admins:'Adminlar',stat_tokens:'API Tokenlar',stat_sessions:'Sessiyalar',stat_mappings:'PII yozuvlar',stat_dbs:'Ulangan BD',
+    th_email:'Email',th_name:'Ism',th_company:'Kompaniya',th_role:'Rol',th_status:'Holat',th_tokens:'Tokenlar',th_created:'Yaratilgan',th_actions:'Amallar',th_user:'Foydalanuvchi',th_mappings:'Mappinglar',th_action:'Amal',th_details:'Tafsilotlar',
+    role_admin:'Admin',role_user:'Foydalanuvchi',status_active:'Faol',status_inactive:'Bloklangan',
+    search_users:'Email, ism, kompaniya bo\'yicha qidirish...',
+    recent_users:'So\'nggi foydalanuvchilar',
+    btn_details:'Tafsilotlar',btn_toggle_admin:'Admin',btn_block:'Bloklash',btn_unblock:'Ochish',btn_delete:'O\'chirish',btn_reset_pwd:'Parolni tiklash',btn_cancel:'Bekor qilish',btn_confirm:'Tasdiqlash',
+    confirm_delete:'Foydalanuvchini o\'chirishga ishonchingiz kommi',confirm_delete2:'Barcha ma\'lumotlar yo\'qoladi.',
+    confirm_reset:'Parolni tiklash',confirm_reset2:'Tasodifiy vaqtinchalik parol yaratiladi — uni nusxalang, u faqat bir marta ko\'rsatiladi.',pwd_reset_to:'Vaqtinchalik parol:',
+    user_detail:'Foydalanuvchi tafsilotlari',
+    lbl_id:'ID',lbl_email:'Email',lbl_name:'To\'liq ism',lbl_company:'Kompaniya',lbl_role:'Rol',lbl_status:'Holat',lbl_created:'Yaratilgan',lbl_updated:'Yangilangan',lbl_sessions:'Sessiyalar',lbl_mappings:'PII yozuvlar',lbl_tokens:'API tokenlar',lbl_db:'Ma\'lumotlar bazasi',
+    no_db:'Ulanmagan',yes_db:'Ulangan',verified:'Tasdiqlangan',not_verified:'Tasdiqlanmagan',
+    toast_admin_on:'Admin huquqlari berildi',toast_admin_off:'Admin huquqlari olib tashlandi',toast_blocked:'Foydalanuvchi bloklandi',toast_unblocked:'Foydalanuvchi blokdan chiqarildi',toast_deleted:'Foydalanuvchi o\'chirildi',toast_pwd_reset:'Parol tiklandi',toast_error:'Xato',
+    no_data:'Ma\'lumot yo\'q',not_admin:'Ruxsat berilmadi. Admin huquqlari talab qilinadi.'
+  },
+  en:{
+    admin_panel:'Admin Panel',
+    nav_overview:'Overview',nav_users:'Users',nav_sessions:'Sessions',nav_audit:'Audit',
+    title_overview:'System Overview',title_users:'User Management',title_sessions:'PII Sessions',title_audit:'Audit Log',
+    back_dashboard:'Dashboard',btn_logout:'Logout',
+    stat_users:'Users',stat_active:'Active',stat_admins:'Admins',stat_tokens:'API Tokens',stat_sessions:'Sessions',stat_mappings:'PII Records',stat_dbs:'Connected DBs',
+    th_email:'Email',th_name:'Name',th_company:'Company',th_role:'Role',th_status:'Status',th_tokens:'Tokens',th_created:'Created',th_actions:'Actions',th_user:'User',th_mappings:'Mappings',th_action:'Action',th_details:'Details',
+    role_admin:'Admin',role_user:'User',status_active:'Active',status_inactive:'Blocked',
+    search_users:'Search by email, name, company...',
+    recent_users:'Recent Users',
+    btn_details:'Details',btn_toggle_admin:'Admin',btn_block:'Block',btn_unblock:'Unblock',btn_delete:'Delete',btn_reset_pwd:'Reset Password',btn_cancel:'Cancel',btn_confirm:'Confirm',
+    confirm_delete:'Are you sure you want to delete user',confirm_delete2:'All data will be lost.',
+    confirm_reset:'Reset password for',confirm_reset2:'A random temporary password will be generated — copy it, it is shown only once.',pwd_reset_to:'Temporary password:',
+    user_detail:'User Details',
+    lbl_id:'ID',lbl_email:'Email',lbl_name:'Full Name',lbl_company:'Company',lbl_role:'Role',lbl_status:'Status',lbl_created:'Created',lbl_updated:'Updated',lbl_sessions:'Sessions',lbl_mappings:'PII Records',lbl_tokens:'API Tokens',lbl_db:'Database',
+    no_db:'Not connected',yes_db:'Connected',verified:'Verified',not_verified:'Not verified',
+    toast_admin_on:'Admin rights granted',toast_admin_off:'Admin rights revoked',toast_blocked:'User blocked',toast_unblocked:'User unblocked',toast_deleted:'User deleted',toast_pwd_reset:'Password reset',toast_error:'Error',
+    no_data:'No data',not_admin:'Access denied. Admin rights required.'
+  }
+};
+
+let lang=localStorage.getItem('pii_lang')||'ru';
+let theme=localStorage.getItem('pii_theme')||'light';
+let currentPage=1;
+let searchTimeout;
+const API=window.location.origin;
+
+function t(k){return(i18n[lang]&&i18n[lang][k])||k}
+function setLang(l){lang=l;localStorage.setItem('pii_lang',l);applyAll()}
+function toggleTheme(){theme=theme==='light'?'dark':'light';localStorage.setItem('pii_theme',theme);applyAll()}
+function hdrs(){return{Authorization:'Bearer '+localStorage.getItem('access_token'),'Content-Type':'application/json'}}
+function fmtDate(d){if(!d)return'-';const dt=new Date(d);return dt.toLocaleDateString()+' '+dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+function esc(s){if(!s)return'-';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function applyAll(){
+  document.documentElement.setAttribute('data-theme',theme);
+  document.getElementById('themeIcon').innerHTML=theme==='light'?'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>':'<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>';
+  document.querySelectorAll('.sw-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===lang.toUpperCase()));
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.getAttribute('data-i18n')));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>el.placeholder=t(el.getAttribute('data-i18n-ph')));
+  document.title='PII Anonymizer — '+t('admin_panel');
+}
+
+function showToast(msg,type='success'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast '+type+' show';
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.getAttribute('data-nav')===name));
+  if(name==='overview')loadOverview();
+  if(name==='users'){currentPage=1;loadUsers()}
+  if(name==='sessions')loadSessions();
+  if(name==='audit')loadAudit();
+}
+
+function logout(){
+  localStorage.removeItem('access_token');localStorage.removeItem('user');
+  window.location.href='/login';
+}
+
+// ── Overview ──
+
+async function loadOverview(){
+  try{
+    const res=await fetch(API+'/api/v2/admin/stats',{headers:hdrs()});
+    if(res.status===403){document.querySelector('.main').innerHTML='<div class="page-title">'+t('not_admin')+'</div>';return}
+    if(!res.ok)throw new Error('Failed');
+    const d=await res.json();
+    document.getElementById('statsGrid').innerHTML=`
+      <div class="glass card-sm stat-card"><div class="stat-val">${d.total_users}</div><div class="stat-label">${t('stat_users')}</div></div>
+      <div class="glass card-sm stat-card"><div class="stat-val">${d.active_users}</div><div class="stat-label">${t('stat_active')}</div></div>
+      <div class="glass card-sm stat-card"><div class="stat-val">${d.admin_count}</div><div class="stat-label">${t('stat_admins')}</div></div>
+      <div class="glass card-sm stat-card"><div class="stat-val">${d.active_tokens}</div><div class="stat-label">${t('stat_tokens')}</div></div>
+      <div class="glass card-sm stat-card"><div class="stat-val">${d.sessions_count}</div><div class="stat-label">${t('stat_sessions')}</div></div>
+      <div class="glass card-sm stat-card"><div class="stat-val">${d.mappings_count}</div><div class="stat-label">${t('stat_mappings')}</div></div>
+      <div class="glass card-sm stat-card"><div class="stat-val">${d.verified_databases}</div><div class="stat-label">${t('stat_dbs')}</div></div>
+    `;
+    // Recent users
+    const ures=await fetch(API+'/api/v2/admin/users?per_page=5',{headers:hdrs()});
+    const ud=await ures.json();
+    document.getElementById('recentUsersBody').innerHTML=ud.users.map(u=>`<tr>
+      <td>${u.id}</td>
+      <td>${esc(u.email)}</td>
+      <td>${esc(u.full_name)}</td>
+      <td><span class="badge ${u.is_admin?'badge-admin':'badge-user'}">${u.is_admin?t('role_admin'):t('role_user')}</span></td>
+      <td><span class="badge ${u.is_active?'badge-active':'badge-inactive'}">${u.is_active?t('status_active'):t('status_inactive')}</span></td>
+      <td>${fmtDate(u.created_at)}</td>
+    </tr>`).join('');
+  }catch(e){showToast(t('toast_error')+': '+e.message,'error')}
+}
+
+// ── Users ──
+
+async function loadUsers(search=''){
+  const q=search||document.getElementById('userSearch').value||'';
+  try{
+    const url=API+'/api/v2/admin/users?page='+currentPage+'&per_page=25'+(q?'&search='+encodeURIComponent(q):'');
+    const res=await fetch(url,{headers:hdrs()});
+    if(!res.ok)throw new Error('Failed');
+    const d=await res.json();
+    document.getElementById('usersBody').innerHTML=d.users.map(u=>`<tr>
+      <td>${u.id}</td>
+      <td>${esc(u.email)}</td>
+      <td>${esc(u.full_name)}</td>
+      <td>${esc(u.company_name)}</td>
+      <td><span class="badge ${u.is_admin?'badge-admin':'badge-user'}">${u.is_admin?t('role_admin'):t('role_user')}</span></td>
+      <td><span class="badge ${u.is_active?'badge-active':'badge-inactive'}">${u.is_active?t('status_active'):t('status_inactive')}</span></td>
+      <td>${u.token_count||0}</td>
+      <td>${fmtDate(u.created_at)}</td>
+      <td class="actions-cell">
+        <button class="act-btn" onclick="viewUser(${u.id})">${t('btn_details')}</button>
+        <button class="act-btn admin-toggle" onclick="toggleAdmin(${u.id})">${t('btn_toggle_admin')}</button>
+        <button class="act-btn" onclick="toggleActive(${u.id})">${u.is_active?t('btn_block'):t('btn_unblock')}</button>
+        <button class="act-btn danger" onclick="confirmDelete(${u.id},'${esc(u.email)}')">${t('btn_delete')}</button>
+      </td>
+    </tr>`).join('')||`<tr><td colspan="9" style="text-align:center;color:var(--text2)">${t('no_data')}</td></tr>`;
+
+    // Pagination
+    let pg='';
+    pg+=`<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage<=1?'disabled':''}>&laquo;</button>`;
+    for(let i=1;i<=d.pages;i++){
+      if(d.pages>7&&Math.abs(i-currentPage)>2&&i!==1&&i!==d.pages){if(i===currentPage-3||i===currentPage+3)pg+='<span class="pg-info">...</span>';continue}
+      pg+=`<button class="pg-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    pg+=`<button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage>=d.pages?'disabled':''}>&raquo;</button>`;
+    pg+=`<span class="pg-info">${d.total} ${t('stat_users')}</span>`;
+    document.getElementById('usersPagination').innerHTML=pg;
+  }catch(e){showToast(t('toast_error')+': '+e.message,'error')}
+}
+
+function goPage(p){if(p<1)return;currentPage=p;loadUsers()}
+function debounceSearch(){clearTimeout(searchTimeout);searchTimeout=setTimeout(()=>{currentPage=1;loadUsers()},300)}
+
+async function viewUser(id){
+  try{
+    const res=await fetch(API+'/api/v2/admin/users/'+id,{headers:hdrs()});
+    const d=await res.json();
+    const u=d.user;
+    document.getElementById('modalTitle').textContent=t('user_detail');
+    document.getElementById('modalBody').innerHTML=`
+      <div class="user-detail">
+        <div><div class="label">${t('lbl_id')}</div><div class="value">${u.id}</div></div>
+        <div><div class="label">${t('lbl_email')}</div><div class="value">${esc(u.email)}</div></div>
+        <div><div class="label">${t('lbl_name')}</div><div class="value">${esc(u.full_name)||'-'}</div></div>
+        <div><div class="label">${t('lbl_company')}</div><div class="value">${esc(u.company_name)||'-'}</div></div>
+        <div><div class="label">${t('lbl_role')}</div><div class="value"><span class="badge ${u.is_admin?'badge-admin':'badge-user'}">${u.is_admin?t('role_admin'):t('role_user')}</span></div></div>
+        <div><div class="label">${t('lbl_status')}</div><div class="value"><span class="badge ${u.is_active?'badge-active':'badge-inactive'}">${u.is_active?t('status_active'):t('status_inactive')}</span></div></div>
+        <div><div class="label">${t('lbl_created')}</div><div class="value">${fmtDate(u.created_at)}</div></div>
+        <div><div class="label">${t('lbl_updated')}</div><div class="value">${fmtDate(u.updated_at)}</div></div>
+        <div><div class="label">${t('lbl_sessions')}</div><div class="value">${d.session_count}</div></div>
+        <div><div class="label">${t('lbl_mappings')}</div><div class="value">${d.mapping_count}</div></div>
+        <div><div class="label">${t('lbl_tokens')}</div><div class="value">${d.tokens.length}</div></div>
+        <div><div class="label">${t('lbl_db')}</div><div class="value">${d.db_config?t('yes_db')+' ('+d.db_config.db_host+') '+(d.db_config.is_verified?t('verified'):t('not_verified')):t('no_db')}</div></div>
+      </div>
+      ${d.tokens.length?'<div style="margin-top:16px"><div class="label">'+t('lbl_tokens')+'</div>'+d.tokens.map(tk=>'<div style="font-size:13px;padding:4px 0;color:var(--text2)">'+esc(tk.name)+' ('+tk.token_prefix+'...) — '+(tk.is_active?'<span style="color:var(--green)">active</span>':'<span style="color:var(--red)">inactive</span>')+'</div>').join('')+'</div>':''}
+    `;
+    document.getElementById('modalActions').innerHTML=`
+      <button class="btn btn-ghost" onclick="closeModal()">${t('btn_cancel')}</button>
+      <button class="btn btn-primary" onclick="closeModal();confirmResetPwd(${u.id},'${esc(u.email)}')">${t('btn_reset_pwd')}</button>
+    `;
+    document.getElementById('userModal').classList.add('show');
+  }catch(e){showToast(t('toast_error'),'error')}
+}
+
+function closeModal(){document.getElementById('userModal').classList.remove('show')}
+
+async function toggleAdmin(id){
+  try{
+    const res=await fetch(API+'/api/v2/admin/users/'+id+'/toggle-admin',{method:'PUT',headers:hdrs()});
+    const d=await res.json();
+    if(!res.ok)throw new Error(d.detail||'Failed');
+    showToast(d.is_admin?t('toast_admin_on'):t('toast_admin_off'));
+    loadUsers();
+  }catch(e){showToast(e.message,'error')}
+}
+
+async function toggleActive(id){
+  try{
+    const res=await fetch(API+'/api/v2/admin/users/'+id+'/toggle-active',{method:'PUT',headers:hdrs()});
+    const d=await res.json();
+    if(!res.ok)throw new Error(d.detail||'Failed');
+    showToast(d.is_active?t('toast_unblocked'):t('toast_blocked'));
+    loadUsers();
+  }catch(e){showToast(e.message,'error')}
+}
+
+function confirmDelete(id,email){
+  document.getElementById('modalTitle').textContent=t('btn_delete');
+  document.getElementById('modalBody').innerHTML=`<p>${t('confirm_delete')} <b>${email}</b>?</p><p style="color:var(--red);margin-top:8px">${t('confirm_delete2')}</p>`;
+  document.getElementById('modalActions').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">${t('btn_cancel')}</button>
+    <button class="btn btn-danger" onclick="closeModal();deleteUser(${id})">${t('btn_delete')}</button>
+  `;
+  document.getElementById('userModal').classList.add('show');
+}
+
+async function deleteUser(id){
+  try{
+    const res=await fetch(API+'/api/v2/admin/users/'+id,{method:'DELETE',headers:hdrs()});
+    const d=await res.json();
+    if(!res.ok)throw new Error(d.detail||'Failed');
+    showToast(t('toast_deleted'));
+    loadUsers();
+  }catch(e){showToast(e.message,'error')}
+}
+
+function confirmResetPwd(id,email){
+  document.getElementById('modalTitle').textContent=t('btn_reset_pwd');
+  document.getElementById('modalBody').innerHTML=`<p>${t('confirm_reset')} <b>${email}</b>?</p><p style="margin-top:8px;color:var(--yellow)">${t('confirm_reset2')}</p>`;
+  document.getElementById('modalActions').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">${t('btn_cancel')}</button>
+    <button class="btn btn-primary" onclick="closeModal();resetPwd(${id})">${t('btn_confirm')}</button>
+  `;
+  document.getElementById('userModal').classList.add('show');
+}
+
+async function resetPwd(id){
+  try{
+    const res=await fetch(API+'/api/v2/admin/users/'+id+'/reset-password',{method:'PUT',headers:hdrs()});
+    const d=await res.json();
+    if(!res.ok)throw new Error(d.detail||'Failed');
+    // The password is generated server-side per reset and never stored in clear,
+    // so this response is the only chance to read it.
+    showToast(`${t('toast_pwd_reset')} — ${t('pwd_reset_to')} ${d.temporary_password}`);
+  }catch(e){showToast(e.message,'error')}
+}
+
+// ── Sessions ──
+
+async function loadSessions(){
+  try{
+    const res=await fetch(API+'/api/v2/admin/sessions?limit=200',{headers:hdrs()});
+    const d=await res.json();
+    document.getElementById('sessionsBody').innerHTML=d.sessions.map(s=>`<tr>
+      <td style="font-size:11px;font-family:monospace">${esc(s.session_id)}</td>
+      <td>${esc(s.user_email)||'-'}</td>
+      <td>${esc(s.contact_id)}</td>
+      <td>${esc(s.page_id)}</td>
+      <td>${esc(s.channel)}</td>
+      <td>${s.mapping_count||0}</td>
+      <td>${fmtDate(s.created_at)}</td>
+    </tr>`).join('')||`<tr><td colspan="7" style="text-align:center;color:var(--text2)">${t('no_data')}</td></tr>`;
+  }catch(e){showToast(t('toast_error'),'error')}
+}
+
+// ── Audit ──
+
+async function loadAudit(){
+  try{
+    const res=await fetch(API+'/api/v2/admin/audit?limit=200',{headers:hdrs()});
+    const d=await res.json();
+    document.getElementById('auditBody').innerHTML=d.logs.map(l=>`<tr>
+      <td>${l.id}</td>
+      <td>${esc(l.action)}</td>
+      <td>${esc(l.user_email)||'-'}</td>
+      <td style="font-size:11px;font-family:monospace">${esc(l.session_id)}</td>
+      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${typeof l.details==='object'?JSON.stringify(l.details):esc(l.details)}</td>
+      <td style="font-size:12px">${esc(l.ip_address)}</td>
+      <td>${fmtDate(l.created_at)}</td>
+    </tr>`).join('')||`<tr><td colspan="7" style="text-align:center;color:var(--text2)">${t('no_data')}</td></tr>`;
+  }catch(e){showToast(t('toast_error'),'error')}
+}
+
+// ── Init ──
+
+(function init(){
+  const token=localStorage.getItem('access_token');
+  if(!token){window.location.href='/login';return}
+  const user=JSON.parse(localStorage.getItem('user')||'{}');
+  document.getElementById('adminEmail').textContent=user.email||'';
+  applyAll();
+  loadOverview();
+})();
+</script>
+</body>
+</html>

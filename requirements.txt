@@ -1,0 +1,32 @@
+# PII Anonymization Service (BRAI_V2 internal) — regex-only mode.
+# llama-cpp-python / numpy are NOT installed — we never run the LLM path.
+# If you ever flip PII_USE_LLM=True, add those back and restore the
+# multi-stage Dockerfile with BLAS/CMake.
+
+# Core
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+aiofiles==23.2.1
+
+# Monitoring & Logging
+prometheus-client==0.19.0
+structlog==24.1.0
+
+# HTTP client (used by openai_proxy.py in production, not just tests)
+httpx==0.26.0
+
+# Email validation (required by pydantic.EmailStr in user_models.py)
+email-validator==2.1.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# Auth & Security
+python-jose[cryptography]==3.3.0
+bcrypt==4.1.2
+cryptography==42.0.0
+
+# Utils
+python-multipart==0.0.9
